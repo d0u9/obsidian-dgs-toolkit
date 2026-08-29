@@ -8,6 +8,7 @@ import {
 import {
 	DEFAULT_SETTINGS,
 	DgsToolkitSettingTab,
+	normalizePublishingTarget,
 	type DgsToolkitSettings,
 } from './settings';
 
@@ -216,6 +217,11 @@ export default class DgsToolkitPlugin extends Plugin {
 			DEFAULT_SETTINGS,
 			(await this.loadData()) as Partial<DgsToolkitSettings>,
 		);
+		const target = normalizePublishingTarget(this.settings.publishingTargetFolder);
+		if (target !== this.settings.publishingTargetFolder) {
+			this.settings.publishingTargetFolder = target;
+			await this.saveSettings();
+		}
 	}
 
 	async saveSettings(): Promise<void> {
