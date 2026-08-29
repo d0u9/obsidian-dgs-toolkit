@@ -157,6 +157,23 @@
 	white-space: normal;
 }
 
+/* A caption's list is part of the caption: the theme's list spacing and sizing
+   are cleared so it reads at the same rhythm as the text around it, and the
+   indent is only wide enough to hang the markers. */
+.dgs-custom-container[data-type='imgcap'] .dgs-custom-container__content :is(ol, ul),
+.markdown-rendered .dgs-imgcap-segment.dgs-imgcap-segment :is(ol, ul) {
+	--list-spacing: 0;
+	padding-inline-start: 1.1em;
+}
+
+.dgs-custom-container[data-type='imgcap'] .dgs-custom-container__content li,
+.markdown-rendered .dgs-imgcap-segment.dgs-imgcap-segment li {
+	margin-block: 0;
+	padding-block: 0;
+	font-size: inherit;
+	line-height: inherit;
+}
+
 .markdown-rendered .dgs-poem-segment.dgs-poem-segment {
 	margin-block: 0;
 	padding-left: clamp(1rem, 3vw, 2rem);
