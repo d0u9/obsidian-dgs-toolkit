@@ -696,7 +696,7 @@
    at least as specific to keep list rows flat. */
 .dgs-publishing-modal .dgs-publishing-change__open {
 	display: grid;
-	grid-template-columns: 5rem 1fr;
+	grid-template-columns: 5rem 1fr auto;
 	align-items: center;
 	gap: .6rem;
 	flex: 1;
@@ -739,6 +739,13 @@
 .dgs-publishing-change--added .dgs-publishing-change__badge { color: var(--color-green); }
 .dgs-publishing-change--modified .dgs-publishing-change__badge { color: var(--color-yellow); }
 .dgs-publishing-change--removed .dgs-publishing-change__badge { color: var(--color-red); }
+
+.dgs-publishing-change__pull {
+	flex: none;
+	margin-inline-start: .6rem;
+	color: var(--interactive-accent);
+	font-size: var(--font-ui-smaller);
+}
 
 .dgs-publishing-change__path {
 	font-family: var(--font-monospace);
