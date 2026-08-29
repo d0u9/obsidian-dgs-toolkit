@@ -540,16 +540,22 @@
 	font-size: var(--font-ui-smaller);
 }
 
+/* Fed the same custom properties the workspace gets, so the sample and a note
+   cannot disagree about what a value means. */
 .dgs-typography-preview__sample {
-	--dgs-preview-paragraph-spacing: 1em;
 	max-height: 13rem;
+	max-width: var(--dgs-line-width);
 	overflow-y: auto;
 	color: var(--text-normal);
-	font-family: var(--font-text);
+	font-family: var(--dgs-font-family, var(--font-text));
+	font-size: var(--dgs-font-size);
+	letter-spacing: var(--dgs-letter-spacing);
+	word-spacing: var(--dgs-word-spacing);
+	line-height: var(--dgs-line-height);
 }
 
 .dgs-typography-preview__sample p {
-	margin-block: 0 var(--dgs-preview-paragraph-spacing);
+	margin-block: 0 var(--dgs-paragraph-spacing);
 }
 
 .dgs-typography-preview__sample p:last-child {
@@ -557,13 +563,13 @@
 }
 
 .dgs-typography-preview__heading {
-	margin-block: 0 var(--dgs-preview-paragraph-spacing);
+	margin-block: 0 var(--dgs-paragraph-spacing);
 	font-size: 1.3em;
 	line-height: inherit;
 }
 
 .dgs-typography-preview__sample blockquote {
-	margin-block: 0 var(--dgs-preview-paragraph-spacing);
+	margin-block: 0 var(--dgs-paragraph-spacing);
 	margin-inline: 0;
 	padding-inline-start: .8em;
 	border-inline-start: 2px solid var(--background-modifier-border);
