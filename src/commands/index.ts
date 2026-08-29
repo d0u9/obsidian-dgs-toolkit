@@ -1,4 +1,5 @@
 import type DgsToolkitPlugin from '../main';
+import { chooseAndPublishFolder } from '../publishing/folder-publisher';
 
 export function registerCommands(plugin: DgsToolkitPlugin): void {
 	plugin.addCommand({
@@ -16,5 +17,11 @@ export function registerCommands(plugin: DgsToolkitPlugin): void {
 		id: 'toggle-colon-blocks-current-reading-view',
 		name: 'Toggle colon blocks in current reading view',
 		callback: () => plugin.toggleColonBlocksInActiveReadingView(),
+	});
+
+	plugin.addCommand({
+		id: 'publish-folder-to-final-publishing-folder',
+		name: 'Publish folder to final publishing folder',
+		callback: () => void chooseAndPublishFolder(plugin),
 	});
 }
