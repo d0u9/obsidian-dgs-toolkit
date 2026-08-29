@@ -1,7 +1,7 @@
 {
 	"id": "dgs-toolkit",
 	"name": "DGS Toolkit",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"minAppVersion": "1.5.0",
 	"description": "Render extensible custom Markdown containers delimited by :::.",
 	"author": "DGS",
