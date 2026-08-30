@@ -100,7 +100,12 @@
 	--dgs-poem-line-height: 1.85;
 	--dgs-poem-letter-spacing-cjk: .008em;
 	--dgs-poem-line-height-cjk: 2.15;
-	--dgs-poem-stanza-line-height: 2.6;
+	/* A stanza break has to stay clear of the leading around it. Both views aim
+	   at about one and a half times the space between two lines of the same
+	   stanza: an em gap in the rendered view, where the blank line collapses,
+	   and a line of its own in the editor, where it does not. */
+	--dgs-poem-stanza-gap: 1.25em;
+	--dgs-poem-stanza-line-height: 3;
 }
 
 .dgs-custom-container[data-type='poem'] {
@@ -117,6 +122,12 @@
 .dgs-custom-container[data-type='poem'].dgs-custom-container--cjk {
 	letter-spacing: var(--dgs-poem-letter-spacing-cjk);
 	line-height: var(--dgs-poem-line-height-cjk);
+}
+
+/* A titled poem is boxed rather than segmented, and the rule that clears block
+   bodies of the theme's paragraph spacing leaves its stanzas touching. */
+.dgs-custom-container[data-type='poem'] .dgs-custom-container__content > p + p {
+	margin-block-start: var(--dgs-poem-stanza-gap);
 }
 
 /* Multi-stanza poems stay in Obsidian's own DOM and are styled in place. */
@@ -209,7 +220,7 @@
 }
 
 .markdown-rendered .dgs-poem-segment + .dgs-poem-segment:not(.dgs-poem-segment--first) {
-	padding-top: .8em;
+	padding-top: var(--dgs-poem-stanza-gap);
 }
 
 .markdown-rendered .dgs-poem-segment--cjk {
