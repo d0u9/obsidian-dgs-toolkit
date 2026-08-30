@@ -338,6 +338,13 @@ function findDelimiterParagraph(
 	return candidates.find((candidate) => matches(candidate.textContent?.trim() ?? ''));
 }
 
+/** Takes back a "never closed" verdict, the tooltip that carries it included. */
+function clearUnclosed(element: HTMLElement): void {
+	element.removeClass('dgs-unclosed-delimiter');
+	element.removeAttribute('aria-label');
+	element.removeAttribute('title');
+}
+
 /**
  * A block that runs past the end of a rendering section has no closing sibling,
  * so `buildContainers` calls it unclosed before the cross-section pass gets to
@@ -345,9 +352,7 @@ function findDelimiterParagraph(
  */
 function claimDelimiter(element: HTMLElement, delimiterClass: string): void {
 	element.addClass(delimiterClass);
-	element.removeClass('dgs-unclosed-delimiter');
-	element.removeAttribute('aria-label');
-	element.removeAttribute('title');
+	clearUnclosed(element);
 }
 
 function markCrossSectionBlocks(root: HTMLElement): void {
@@ -487,7 +492,7 @@ function buildContainers(root: HTMLElement, defaultType: string): void {
 			opener.setAttribute('title', message);
 			continue;
 		}
-		opener.removeClass('dgs-unclosed-delimiter');
+		clearUnclosed(opener);
 
 		// These types are marked in place so Obsidian keeps owning their sections.
 		// Skip past the closer too, or it would read as the next block's opener.
@@ -531,6 +536,9 @@ function buildContainers(root: HTMLElement, defaultType: string): void {
 
 export function restoreCustomContainers(root: HTMLElement): void {
 	clearAdjacencyClasses(root);
+	root.querySelectorAll<HTMLElement>('.dgs-unclosed-delimiter').forEach(
+		(element) => clearUnclosed(element),
+	);
 	unwrapListDelimiters(root);
 	for (const container of Array.from(
 		root.querySelectorAll<HTMLElement>('.dgs-custom-container'),
