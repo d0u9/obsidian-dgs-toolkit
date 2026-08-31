@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-dgs-toolkit",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"description": "A modular toolkit for extending and refining Obsidian workflows.",
 	"main": "main.js",
 	"type": "module",
