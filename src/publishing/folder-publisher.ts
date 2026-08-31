@@ -1,6 +1,7 @@
 import { FileSystemAdapter, Notice, Platform, TFile, normalizePath } from 'obsidian';
 import type DgsToolkitPlugin from '../main';
 import { compareFolders, readFileDiff, type ChangeStatus } from './folder-diff';
+import { expandHomePath } from '../settings';
 import { loadDesktopNodeModules, type FileSystemApi, type PathApi } from './node-api';
 import { ConfirmPublishingModal, PublishingFolderSuggestModal } from './modals';
 
@@ -50,12 +51,15 @@ export async function chooseAndPublishFolder(plugin: DgsToolkitPlugin): Promise<
 
 	// Node APIs are loaded only after the desktop guard above. Obsidian plugins
 	// run as CommonJS; dynamic import() is treated as a browser fetch here.
-	const { pathModule, fileSystem } = loadDesktopNodeModules();
+	const { pathModule, fileSystem, osModule } = loadDesktopNodeModules();
+	// A destination may be written as ~/…; the rest of the flow works on the
+	// expanded path so every comparison below is between real locations.
+	const targetPath = expandHomePath(targetSetting, osModule.homedir());
 	const vaultRoot = pathModule.resolve(plugin.app.vault.adapter.getBasePath());
 	const sourceRoot = pathModule.resolve(vaultRoot, sourceSetting);
-	const targetRoot = pathModule.resolve(targetSetting);
-	if (!isInside(vaultRoot, sourceRoot, pathModule) || !pathModule.isAbsolute(targetSetting)) {
-		new Notice('The source must be inside the vault and the destination must be an absolute path.');
+	const targetRoot = pathModule.resolve(targetPath);
+	if (!isInside(vaultRoot, sourceRoot, pathModule) || !pathModule.isAbsolute(targetPath)) {
+		new Notice('The source must be inside the vault and the destination must be an absolute or ~/ path.');
 		return;
 	}
 	if (targetRoot === pathModule.parse(targetRoot).root) {

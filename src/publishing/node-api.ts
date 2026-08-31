@@ -56,6 +56,10 @@ export interface FileSystemApi {
 	): Promise<void>;
 }
 
+export interface OsApi {
+	homedir(): string;
+}
+
 export interface PathApi {
 	join(...parts: string[]): string;
 	resolve(...parts: string[]): string;
@@ -75,6 +79,7 @@ export interface PathApi {
 export function loadDesktopNodeModules(): {
 	fileSystem: FileSystemApi;
 	pathModule: PathApi;
+	osModule: OsApi;
 } {
 	if (!Platform.isDesktopApp) {
 		throw new Error('Folder publishing is available only in the desktop app.');
@@ -82,5 +87,6 @@ export function loadDesktopNodeModules(): {
 	return {
 		fileSystem: require('node:fs/promises') as FileSystemApi,
 		pathModule: require('node:path') as PathApi,
+		osModule: require('node:os') as OsApi,
 	};
 }

@@ -83,10 +83,22 @@ export function normalizePublishingTarget(value: string): string {
 	return path.replace(/[\\/]+$/, '') || path;
 }
 
+// A destination may be written relative to the home folder; the path is stored
+// as typed and expanded only where the file system is actually touched.
+export function expandHomePath(value: string, homeDirectory: string): string {
+	const path = value.trim();
+	if (path !== '~' && !path.startsWith('~/') && !(Platform.isWin && path.startsWith('~\\'))) {
+		return path;
+	}
+	const rest = path.slice(1).replace(/^[\\/]+/, '');
+	if (!rest) return homeDirectory;
+	return `${homeDirectory.replace(/[\\/]+$/, '')}${Platform.isWin ? '\\' : '/'}${rest}`;
+}
+
 function publishingTargetPlaceholder(): string {
 	return Platform.isWin
-		? 'C:\\Users\\you\\Documents\\Published Site'
-		: '/Users/you/Documents/Published Site';
+		? '~\\Documents\\Published Site'
+		: '~/Documents/Published Site';
 }
 
 export class DgsToolkitSettingTab extends PluginSettingTab {
@@ -192,7 +204,7 @@ export class DgsToolkitSettingTab extends PluginSettingTab {
 					},
 					{
 						name: 'Final publishing folder',
-						desc: 'Absolute path to a folder outside this vault. The selected folder name is preserved.',
+						desc: 'Path to a folder outside this vault, absolute or starting with ~/. The selected folder name is preserved.',
 						control: {
 							type: 'text',
 							key: 'publishingTargetFolder',
@@ -383,7 +395,7 @@ export class DgsToolkitSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName('Final publishing folder')
-			.setDesc('Absolute path to a folder outside this vault. The selected folder name is preserved.')
+			.setDesc('Path to a folder outside this vault, absolute or starting with ~/. The selected folder name is preserved.')
 			.addText((text) => {
 				text.inputEl.addClass('dgs-publishing-path');
 				text
