@@ -1,7 +1,7 @@
 import { FileSystemAdapter, Notice, Platform, TFile, normalizePath } from 'obsidian';
 import type DgsToolkitPlugin from '../main';
 import { compareFolders, readFileDiff, type ChangeStatus } from './folder-diff';
-import { expandHomePath } from '../settings';
+import { expandHomePath } from './paths';
 import { loadDesktopNodeModules, type FileSystemApi, type PathApi } from './node-api';
 import { ConfirmPublishingModal, PublishingFolderSuggestModal } from './modals';
 

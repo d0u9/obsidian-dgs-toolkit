@@ -614,8 +614,26 @@
 	text-align: end;
 }
 
+/*
+ * A long destination path needs a wide field, but a fixed width squeezes the
+ * setting's own name and description into a column one word wide. The row is
+ * shared out instead: the field grows into whatever is left, and both halves
+ * keep a floor.
+ */
+.dgs-publishing-setting .setting-item-info {
+	flex: 1 1 16rem;
+	min-width: 12rem;
+}
+
+.dgs-publishing-setting .setting-item-control {
+	flex: 1 1 18rem;
+	min-width: 0;
+}
+
 .dgs-publishing-path {
-	width: min(32rem, 55vw);
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
 }
 
 .dgs-publishing-preview {

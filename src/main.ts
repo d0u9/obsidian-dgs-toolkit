@@ -8,10 +8,10 @@ import {
 	renderCustomContainers,
 	restoreCustomContainers,
 } from './render/custom-container';
+import { normalizePublishingTarget } from './publishing/paths';
 import {
 	DEFAULT_SETTINGS,
 	DgsToolkitSettingTab,
-	normalizePublishingTarget,
 	type DgsToolkitSettings,
 } from './settings';
 import { applyVariables, typographyVariables } from './typography';

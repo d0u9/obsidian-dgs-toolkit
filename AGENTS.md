@@ -46,11 +46,13 @@ that goes to another vault therefore leaves the local one holding fresh CSS and
 a stale `main.js` — a combination that behaves like neither version and has
 already cost an afternoon of chasing a bug that only existed in the mismatch.
 
-Build both before testing, and test only what was just built:
+**Always build both vaults after changing any source file — the local vault and
+the iCloud vault — without being asked.** A change is not finished until both
+have it; the user tests in either one.
 
 ```bash
 DGS_PLUGIN_OUTDIR=. npm run build   # the local vault, at the repository root
-npm run build                       # whatever .env points at
+npm run build                       # the iCloud vault, per .env
 ```
 
 ## Linting
@@ -111,6 +113,34 @@ npm run build                       # whatever .env points at
 - If the plugin has configuration, provide a settings tab and sensible defaults.
 - Persist settings using `this.loadData()` / `this.saveData()`.
 - Use stable command IDs; avoid renaming once released.
+
+### The settings tab is rendered two ways — change both
+
+`DgsToolkitSettingTab` in `src/settings.ts` carries two descriptions of the same
+settings UI:
+
+- `getSettingDefinitions()` / `setControlValue()` — the declarative API
+  (Obsidian 1.13+). **This is what actually renders on a current Obsidian**, and
+  it makes the settings searchable.
+- `display()` and its `render*Settings()` helpers — the imperative fallback for
+  older versions.
+
+Obsidian silently prefers the declarative definitions, so a control added only
+to `display()` is invisible with no error to point at it — that has already
+cost one round of "why can't I see the button?". Every time a setting is added,
+removed, renamed, or re-described, update both, and keep the copy identical.
+
+Do not change a row's own control from inside that control's handler — for
+example disabling a button while its click is being handled. That left the
+whole window ignoring clicks, with nothing in the console; the settings
+framework appears to re-enter its own render. Guard against double runs with a
+plain variable instead, and defer any file system work with
+`window.setTimeout(…, 0)` so the handler returns first.
+
+For a row the declarative controls cannot express (a button, a status line),
+use a `render: (setting) => …` item and have it call the same private helper
+the `display()` path calls, the way `renderSourceFolderSetting` and
+`renderTargetFolderSetting` do — one behaviour, two entry points.
 
 ## Versioning & releases
 

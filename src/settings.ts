@@ -1,5 +1,6 @@
 import {
 	App,
+	Notice,
 	Platform,
 	PluginSettingTab,
 	Setting,
@@ -10,6 +11,8 @@ import {
 	type TextComponent,
 } from 'obsidian';
 import { SUPPORTED_BLOCKS, blockExample } from './blocks';
+import { normalizePublishingTarget } from './publishing/paths';
+import { checkPublishingSource, checkPublishingTarget, type PathCheck } from './publishing/path-check';
 import type DgsToolkitPlugin from './main';
 import { applyVariables, typographyVariables } from './typography';
 
@@ -70,30 +73,10 @@ export function sanitizeFontFamily(value: string): string {
 	return value.replace(/[;{}]/g, '').trim();
 }
 
-// A path copied out of a terminal arrives shell-escaped ("Doug\\ Su"), which
-// resolves to a folder that does not exist and makes every file look new.
-export function normalizePublishingTarget(value: string): string {
-	let path = value.trim();
-	const quote = path.charAt(0);
-	if (path.length > 1 && (quote === '"' || quote === "'") && path.endsWith(quote)) {
-		path = path.slice(1, -1);
-	}
-	// Backslash is a path separator on Windows, so only unescape elsewhere.
-	if (!Platform.isWin) path = path.replace(/\\(?=[^A-Za-z0-9])/g, '');
-	return path.replace(/[\\/]+$/, '') || path;
-}
-
-// A destination may be written relative to the home folder; the path is stored
-// as typed and expanded only where the file system is actually touched.
-export function expandHomePath(value: string, homeDirectory: string): string {
-	const path = value.trim();
-	if (path !== '~' && !path.startsWith('~/') && !(Platform.isWin && path.startsWith('~\\'))) {
-		return path;
-	}
-	const rest = path.slice(1).replace(/^[\\/]+/, '');
-	if (!rest) return homeDirectory;
-	return `${homeDirectory.replace(/[\\/]+$/, '')}${Platform.isWin ? '\\' : '/'}${rest}`;
-}
+const SOURCE_FOLDER_NAME = 'Source folder';
+const SOURCE_FOLDER_DESC = 'Vault-relative folder whose direct subfolders can be published, for example publish.';
+const TARGET_FOLDER_NAME = 'Final publishing folder';
+const TARGET_FOLDER_DESC = 'Path to a folder outside this vault, absolute or starting with ~/. The selected folder name is preserved.';
 
 function publishingTargetPlaceholder(): string {
 	return Platform.isWin
@@ -192,26 +175,17 @@ export class DgsToolkitSettingTab extends PluginSettingTab {
 						},
 					},
 					{
-						name: 'Source folder',
-						desc: 'Vault-relative folder whose direct subfolders can be published, for example publish.',
-						control: {
-							type: 'text',
-							key: 'publishingSourceFolder',
-							defaultValue: DEFAULT_SETTINGS.publishingSourceFolder,
-							placeholder: 'publish',
-							validate: (value) => value.trim() ? undefined : 'Enter a source folder.',
-						},
+						name: SOURCE_FOLDER_NAME,
+						desc: SOURCE_FOLDER_DESC,
+						// Rendered by hand: the row carries a check button and a
+						// result line next to the field, which the declarative
+						// text control cannot express.
+						render: (setting) => this.renderSourceFolderSetting(setting),
 					},
 					{
-						name: 'Final publishing folder',
-						desc: 'Path to a folder outside this vault, absolute or starting with ~/. The selected folder name is preserved.',
-						control: {
-							type: 'text',
-							key: 'publishingTargetFolder',
-							defaultValue: DEFAULT_SETTINGS.publishingTargetFolder,
-							placeholder: publishingTargetPlaceholder(),
-							validate: (value) => value.trim() ? undefined : 'Enter a destination folder.',
-						},
+						name: TARGET_FOLDER_NAME,
+						desc: TARGET_FOLDER_DESC,
+						render: (setting) => this.renderTargetFolderSetting(setting),
 					},
 					{
 						name: 'Publish a folder',
@@ -240,14 +214,6 @@ export class DgsToolkitSettingTab extends PluginSettingTab {
 			case 'defaultType':
 				if (typeof value !== 'string' || !value.trim()) return;
 				this.plugin.settings.defaultType = value.trim();
-				break;
-			case 'publishingSourceFolder':
-				if (typeof value !== 'string') return;
-				this.plugin.settings.publishingSourceFolder = value.trim();
-				break;
-			case 'publishingTargetFolder':
-				if (typeof value !== 'string') return;
-				this.plugin.settings.publishingTargetFolder = normalizePublishingTarget(value);
 				break;
 			case 'fontSize':
 			case 'lineWidth':
@@ -382,37 +348,85 @@ export class DgsToolkitSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		this.renderSourceFolderSetting(new Setting(this.containerEl));
+		this.renderTargetFolderSetting(new Setting(this.containerEl));
+
 		new Setting(this.containerEl)
-			.setName('Source folder')
-			.setDesc('Vault-relative folder whose direct subfolders can be published, for example publish.')
-			.addText((text) => text
+			.setName('Publish')
+			.setDesc('Choose a direct subfolder with the publishing command, then confirm. An existing folder with the same name is replaced safely.');
+	}
+
+	// Both publishing rows are built here so the declarative definitions and
+	// the imperative display() fallback show exactly the same controls.
+	private renderSourceFolderSetting(setting: Setting): void {
+		setting.setName(SOURCE_FOLDER_NAME).setDesc(SOURCE_FOLDER_DESC);
+		setting.settingEl.addClass('dgs-publishing-setting');
+		setting.addText((text) => {
+			text.inputEl.addClass('dgs-publishing-path');
+			text
 				.setPlaceholder('Publish')
 				.setValue(this.plugin.settings.publishingSourceFolder)
 				.onChange(async (value) => {
 					this.plugin.settings.publishingSourceFolder = value.trim();
 					await this.plugin.saveSettings();
-				}));
+				});
+		});
+		this.addCheckButton(setting, () => this.checkSource());
+	}
 
-		new Setting(this.containerEl)
-			.setName('Final publishing folder')
-			.setDesc('Path to a folder outside this vault, absolute or starting with ~/. The selected folder name is preserved.')
-			.addText((text) => {
-				text.inputEl.addClass('dgs-publishing-path');
-				text
-					.setPlaceholder(publishingTargetPlaceholder())
-					.setValue(this.plugin.settings.publishingTargetFolder)
-					.onChange(async (value) => {
-						this.plugin.settings.publishingTargetFolder = normalizePublishingTarget(value);
-						await this.plugin.saveSettings();
-					});
-					text.inputEl.addEventListener('blur', () => {
-						text.setValue(this.plugin.settings.publishingTargetFolder);
-					});
+	private renderTargetFolderSetting(setting: Setting): void {
+		setting.setName(TARGET_FOLDER_NAME).setDesc(TARGET_FOLDER_DESC);
+		setting.settingEl.addClass('dgs-publishing-setting');
+		setting.addText((text) => {
+			text.inputEl.addClass('dgs-publishing-path');
+			text
+				.setPlaceholder(publishingTargetPlaceholder())
+				.setValue(this.plugin.settings.publishingTargetFolder)
+				.onChange(async (value) => {
+					this.plugin.settings.publishingTargetFolder = normalizePublishingTarget(value);
+					await this.plugin.saveSettings();
+				});
+			text.inputEl.addEventListener('blur', () => {
+				text.setValue(this.plugin.settings.publishingTargetFolder);
 			});
+		});
+		this.addCheckButton(setting, () => this.checkTarget());
+	}
 
-		new Setting(this.containerEl)
-			.setName('Publish')
-			.setDesc('Choose a direct subfolder with the publishing command, then confirm. An existing folder with the same name is replaced safely.');
+	// The result is reported as a notice rather than written into the row: the
+	// declarative settings page owns that markup, and growing a row from under
+	// it is not worth the risk for one line of text.
+	//
+	// The handler deliberately touches nothing but the check. Disabling the
+	// button for the duration of the click left the whole window unresponsive
+	// to clicks, with no error — the settings framework does not take kindly to
+	// a row's control changing state from inside its own handler. The work is
+	// also deferred by a tick so the handler returns before the file system is
+	// touched.
+	private addCheckButton(setting: Setting, check: () => Promise<PathCheck>): void {
+		setting.addButton((button) => button
+			.setButtonText('Check')
+			.onClick(() => {
+				window.setTimeout(() => {
+					void check()
+						.then((result) => {
+							new Notice(result.message, result.level === 'ok' ? 4000 : 8000);
+						})
+						.catch((error: unknown) => {
+							new Notice(error instanceof Error ? error.message : String(error), 8000);
+						});
+				}, 0);
+			}));
+	}
+
+	private async checkSource(): Promise<PathCheck> {
+		return checkPublishingSource(this.app, this.plugin.settings.publishingSourceFolder)
+			?? { level: 'warn', message: 'Enter a source folder first.' };
+	}
+
+	private async checkTarget(): Promise<PathCheck> {
+		return await checkPublishingTarget(this.app, this.plugin.settings.publishingTargetFolder)
+			?? { level: 'warn', message: 'Enter a final publishing folder first.' };
 	}
 
 	private renderContainerSettings(): void {

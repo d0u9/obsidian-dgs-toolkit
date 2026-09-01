@@ -101,7 +101,11 @@ subfolder, such as `publish/02`, to a configured folder outside the vault.
 Configure and enable it under **Settings → DGS Toolkit → Folder publishing**,
 then run **Publish folder to final publishing folder**. A destination path
 copied from a terminal may arrive shell-escaped or quoted; the setting strips
-that so the path still points at the real folder. The searchable picker
+that so the path still points at the real folder. Each of the two folder
+settings has a **Check** button that reports whether the configured path is
+there — the source folder and how many subfolders it offers, and whether the
+destination exists, is a file, is a symbolic link, or sits inside the vault —
+so a typo surfaces in settings rather than at publish time. The searchable picker
 is populated from the source folder each time the command runs, newest name
 first.
 
