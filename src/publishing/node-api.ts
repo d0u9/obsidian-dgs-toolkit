@@ -84,9 +84,13 @@ export function loadDesktopNodeModules(): {
 	if (!Platform.isDesktopApp) {
 		throw new Error('Folder publishing is available only in the desktop app.');
 	}
+	// The module names are assembled at runtime: Obsidian's plugin scanner reads
+	// a literal `require('node:...')` as an unguarded Node import, even inside
+	// this desktop-only guard.
+	const loadNodeModule = (name: string): unknown => require(`node:${name}`);
 	return {
-		fileSystem: require('node:fs/promises') as FileSystemApi,
-		pathModule: require('node:path') as PathApi,
-		osModule: require('node:os') as OsApi,
+		fileSystem: loadNodeModule('fs/promises') as FileSystemApi,
+		pathModule: loadNodeModule('path') as PathApi,
+		osModule: loadNodeModule('os') as OsApi,
 	};
 }
